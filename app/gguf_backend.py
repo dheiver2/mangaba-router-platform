@@ -63,9 +63,9 @@ def _stage(slug: str):
 
 
 CATALOG = {
-    "e2b": {"display_name": "Mangaba E2B (Q4_0)", "params": "2B",  "ctx": 8192},
-    "e4b": {"display_name": "Mangaba E4B (Q4_0)", "params": "4B",  "ctx": 8192},
-    "12b": {"display_name": "Mangaba 12B (Q4_0)", "params": "12B", "ctx": 4096},
+    "e2b": {"display_name": "Mangaba E2B Instruct · Gemma 4 · Q4_0", "params": "2B",  "ctx": 8192},
+    "e4b": {"display_name": "Mangaba E4B Instruct · Gemma 4 · Q4_0", "params": "4B",  "ctx": 8192},
+    "12b": {"display_name": "Mangaba 12B Instruct · Gemma 4 · Q4_0", "params": "12B", "ctx": 4096},
 }
 
 _lock = Lock()

@@ -70,7 +70,7 @@ def _transcribe(audio_bytes: bytes, language: Optional[str]) -> str:
 
 
 def create_gguf_router(slug: str, label: str) -> APIRouter:
-    router = APIRouter(prefix=f"/{slug}", tags=[f"[{label} Q4_0]"])
+    router = APIRouter(prefix=f"/{slug}", tags=[label])
     settings = get_settings()
 
     def _ensure():

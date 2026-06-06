@@ -13,9 +13,9 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(me
 
 # Modelos Mangaba — GGUF quantizados Q4_0 (rodam 100% em 16GB via Metal)
 GGUF_ROUTES = [
-    ("e2b", "Mangaba E2B"),
-    ("e4b", "Mangaba E4B"),
-    ("12b", "Mangaba 12B"),
+    ("e2b", "Mangaba E2B Instruct · Gemma 4 · Q4_0"),
+    ("e4b", "Mangaba E4B Instruct · Gemma 4 · Q4_0"),
+    ("12b", "Mangaba 12B Instruct · Gemma 4 · Q4_0"),
 ]
 
 
