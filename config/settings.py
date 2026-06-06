@@ -19,7 +19,7 @@ class Settings(BaseSettings):
     # Rede: 0.0.0.0 expõe na LAN para múltiplas plataformas (web, mobile, desktop)
     host: str = "0.0.0.0"
     port: int = 8000
-    api_title: str = "🥭 Mangaba Router API"
+    api_title: str = "Mangaba Router API"
     api_version: str = "1.0.0"
     api_description: str = "Plataforma multimodal de IA — modelos Mangaba (Gemma 4)"
 

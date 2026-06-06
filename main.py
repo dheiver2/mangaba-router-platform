@@ -13,10 +13,10 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(me
 
 # Definição dos modelos e seus slugs de URL
 MODEL_ROUTES = [
-    ("gemma-4-E2B-it",    "e2b",  "Mangaba E2B 🥭"),
-    ("gemma-4-E4B-it",    "e4b",  "Mangaba E4B 🥭"),
-    ("gemma-4-12B-it",    "12b",  "Mangaba 12B 🥭"),
-    ("gemma-4-26B-A4B-it","26b",  "Mangaba 26B 🥭"),
+    ("gemma-4-E2B-it",    "e2b",  "Mangaba E2B"),
+    ("gemma-4-E4B-it",    "e4b",  "Mangaba E4B"),
+    ("gemma-4-12B-it",    "12b",  "Mangaba 12B"),
+    ("gemma-4-26B-A4B-it","26b",  "Mangaba 26B"),
 ]
 
 
@@ -30,10 +30,10 @@ def create_app() -> FastAPI:
     settings = get_settings()
 
     app = FastAPI(
-        title="🥭 Mangaba Router API",
+        title="Mangaba Router API",
         version=settings.api_version,
         description="""
-# 🥭 Mangaba Router
+# Mangaba Router
 
 **Plataforma multimodal de IA** — roteamento inteligente entre múltiplos modelos
 **Mangaba** (baseados em Google Gemma 4), com texto, imagem e áudio.
@@ -46,10 +46,10 @@ def create_app() -> FastAPI:
 
 | Modelo | Params | Prefixo |
 |--------|--------|---------|
-| **Mangaba E2B** 🥭 | 2B   | `/api/v1/e2b/` |
-| **Mangaba E4B** 🥭 | 4B   | `/api/v1/e4b/` |
-| **Mangaba 12B** 🥭 | 12B  | `/api/v1/12b/` |
-| **Mangaba 26B** 🥭 | 26B MoE (4B ativos) | `/api/v1/26b/` |
+| **Mangaba E2B** | 2B   | `/api/v1/e2b/` |
+| **Mangaba E4B** | 4B   | `/api/v1/e4b/` |
+| **Mangaba 12B** | 12B  | `/api/v1/12b/` |
+| **Mangaba 26B** | 26B MoE (4B ativos) | `/api/v1/26b/` |
 
 ## 🔌 Endpoints por modelo
 - `POST /{modelo}/text/generate` — geração de texto
