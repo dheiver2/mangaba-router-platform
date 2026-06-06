@@ -14,8 +14,13 @@ if [ ! -x "$PYTHON" ]; then
   exit 1
 fi
 
+# STAGE_TO_SSD=1 copia o modelo ativo para o SSD do notebook na 1ª carga
+# (elimina o gargalo de leitura do USB). Padrão: ativado.
+export STAGE_TO_SSD="${STAGE_TO_SSD:-1}"
+
 echo "==> Python: $($PYTHON --version) (portátil, no HD externo)"
-echo "==> Iniciando API Gemma 4..."
+echo "==> Cache SSD: STAGE_TO_SSD=$STAGE_TO_SSD"
+echo "==> Iniciando 🥭 Mangaba Router..."
 echo "==> Swagger: http://localhost:8000/swagger"
 echo ""
 

@@ -9,6 +9,7 @@ router = APIRouter(prefix="/models", tags=["Modelos"])
 
 class ModelEntry(BaseModel):
     name: str
+    display_name: str
     repo_id: str
     description: str
     params: str

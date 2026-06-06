@@ -63,12 +63,47 @@ def _detect_device() -> str:
     return "cpu"
 
 
+# Cache no SSD do notebook — leitura MUITO mais rápida que o USB/ExFAT.
+# Ative com a variável de ambiente STAGE_TO_SSD=1
+_SSD_CACHE = os.path.expanduser("~/.cache/mangaba-router")
+
+
+def _stage_to_ssd(local_dir: str, name: str) -> str:
+    """
+    Copia o modelo do HD externo para o SSD do notebook (uma vez) e retorna
+    o caminho no SSD. Elimina o gargalo de leitura do USB nas próximas cargas.
+    """
+    import shutil
+    dest = os.path.join(_SSD_CACHE, name)
+    have = os.path.exists(dest) and any(
+        f.endswith(".safetensors") for _, _, files in os.walk(dest) for f in files
+    )
+    if have:
+        logger.info(f"Usando cache SSD: {dest}")
+        return dest
+    os.makedirs(_SSD_CACHE, exist_ok=True)
+    logger.info(f"Copiando '{name}' do HD externo para o SSD (uma vez)...")
+    tmp = dest + ".partial"
+    if os.path.exists(tmp):
+        shutil.rmtree(tmp, ignore_errors=True)
+    shutil.copytree(local_dir, tmp)
+    os.replace(tmp, dest)
+    logger.info(f"Modelo em cache no SSD: {dest}")
+    return dest
+
+
 def _resolve_path(name: str) -> str:
     entry = CATALOG[name]
     local = entry["local_dir"]
-    if os.path.exists(local) and any(
+    has_local = os.path.exists(local) and any(
         f.endswith(".safetensors") for _, _, files in os.walk(local) for f in files
-    ):
+    )
+    if has_local:
+        if os.getenv("STAGE_TO_SSD") == "1":
+            try:
+                return _stage_to_ssd(local, name)
+            except Exception as e:
+                logger.warning(f"Falha ao copiar para SSD ({e}); usando HD externo.")
         return local
     return entry["repo_id"]
 

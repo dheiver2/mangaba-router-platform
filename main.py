@@ -65,15 +65,9 @@ Clique em **Authorize** 🔒 acima para testar pelo Swagger.
         contact={"name": "Mangaba AI", "url": "https://github.com/dheiver2/Mangaba-Router"},
         license_info={"name": "Apache 2.0"},
         lifespan=lifespan,
-        docs_url="/swagger",
+        docs_url="/swagger",      # Swagger UI padrão do FastAPI
         redoc_url="/redoc",
         openapi_url="/openapi.json",
-        swagger_ui_parameters={
-            "defaultModelsExpandDepth": -1,
-            "docExpansion": "none",
-            "filter": True,
-            "tryItOutEnabled": True,
-        },
     )
 
     app.add_middleware(
