@@ -13,6 +13,7 @@ class ModelEntry(BaseModel):
     repo_id: str
     description: str
     params: str
+    min_ram_gb: Optional[int] = None
     available_locally: bool
     loaded: bool
 

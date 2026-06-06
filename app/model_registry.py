@@ -20,29 +20,33 @@ CATALOG: dict[str, dict] = {
         "repo_id": "google/gemma-4-E2B-it",
         "local_dir": "models/google--gemma-4-E2B-it",
         "display_name": "Mangaba E2B",
-        "description": "Mangaba E2B — 2B params efetivos (MoE compacto, mais rápido)",
+        "description": "Mangaba E2B — 2B efetivos (rápido). RAM mín. ~8GB.",
         "params": "2B",
+        "min_ram_gb": 8,
     },
     "gemma-4-E4B-it": {
         "repo_id": "google/gemma-4-E4B-it",
         "local_dir": "models/google--gemma-4-E4B-it",
         "display_name": "Mangaba E4B",
-        "description": "Mangaba E4B — 4B params efetivos (equilíbrio)",
+        "description": "Mangaba E4B — 4B efetivos (equilíbrio). RAM mín. ~12GB.",
         "params": "4B",
+        "min_ram_gb": 12,
     },
     "gemma-4-12B-it": {
         "repo_id": "google/gemma-4-12B-it",
         "local_dir": "models/google--gemma-4-12B-it",
         "display_name": "Mangaba 12B",
-        "description": "Mangaba 12B — multimodal, maior capacidade",
+        "description": "Mangaba 12B — multimodal, maior capacidade. RAM mín. ~24GB.",
         "params": "12B",
+        "min_ram_gb": 24,
     },
     "gemma-4-26B-A4B-it": {
         "repo_id": "google/gemma-4-26B-A4B-it",
         "local_dir": "models/google--gemma-4-26B-A4B-it",
         "display_name": "Mangaba 26B",
-        "description": "Mangaba 26B — MoE 26B (4B ativos), melhor custo-benefício",
+        "description": "Mangaba 26B — MoE 26B (4B ativos). RAM mín. ~40GB.",
         "params": "26B/4B-active",
+        "min_ram_gb": 40,
     },
 }
 
@@ -138,6 +142,20 @@ def load(name: str = DEFAULT_MODEL):
             if torch.cuda.is_available():
                 torch.cuda.empty_cache()
 
+        # Aviso de RAM: compara RAM física com o mínimo recomendado do modelo
+        need = CATALOG[name].get("min_ram_gb")
+        if need:
+            try:
+                import psutil
+                have = psutil.virtual_memory().total / (1024 ** 3)
+                if have < need:
+                    logger.warning(
+                        f"ATENÇÃO: '{name}' recomenda ~{need}GB de RAM; "
+                        f"esta máquina tem {have:.0f}GB. Pode usar swap pesado ou falhar."
+                    )
+            except Exception:
+                pass
+
         path = _resolve_path(name)
         device = _detect_device()
         logger.info(f"Carregando modelo '{name}' de: {path} (device={device})")
@@ -210,6 +228,7 @@ def list_models() -> list[dict]:
             "repo_id": info["repo_id"],
             "description": info["description"],
             "params": info["params"],
+            "min_ram_gb": info.get("min_ram_gb"),
             "available_locally": _is_available(name),
             "loaded": name == _current_name,
         })

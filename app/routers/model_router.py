@@ -147,7 +147,13 @@ def create_model_router(model_name: str, slug: str, label: str) -> APIRouter:
     # ── Texto ────────────────────────────────────────────────────────────────
 
     @router.post("/text/generate", response_model=GenerateResponse,
-                 summary=f"[{label}] Gerar texto")
+                 summary=f"[{label}] Gerar texto",
+                 description=(
+                     f"Geração de texto livre com **{label}** a partir de um *prompt* cru.\n\n"
+                     "**Quando usar:** autocompletar texto, continuação livre, quando você "
+                     "quer controle total do prompt sem o formato de chat.\n\n"
+                     "Para conversas e instruções, prefira **/text/chat**."
+                 ))
     async def generate(req: GenerateRequest):
         _ensure()
         try:
@@ -163,7 +169,13 @@ def create_model_router(model_name: str, slug: str, label: str) -> APIRouter:
         return GenerateResponse(generated_text=text, model=model_name, tokens_generated=tokens)
 
     @router.post("/text/chat", response_model=ChatResponse,
-                 summary=f"[{label}] Chat com histórico")
+                 summary=f"[{label}] Chat com histórico",
+                 description=(
+                     f"Conversa com **{label}** usando mensagens (system/user/assistant).\n\n"
+                     "**Rota recomendada** para a maioria dos casos: aplica o *chat template* "
+                     "do modelo, segue instruções e mantém contexto do histórico.\n\n"
+                     "Use `system` para definir o comportamento do assistente."
+                 ))
     async def chat(req: ChatRequest):
         _ensure()
         try:
@@ -184,7 +196,14 @@ def create_model_router(model_name: str, slug: str, label: str) -> APIRouter:
     # ── Imagem ───────────────────────────────────────────────────────────────
 
     @router.post("/image/describe", response_model=ImageResponse,
-                 summary=f"[{label}] Descrever imagem")
+                 summary=f"[{label}] Descrever imagem",
+                 description=(
+                     f"Análise multimodal de imagem com **{label}**.\n\n"
+                     "**Quando usar:** descrever uma imagem, fazer perguntas sobre o conteúdo "
+                     "visual, OCR, identificar objetos/cores/cenas.\n\n"
+                     "Envie o arquivo em `file` e a instrução em `prompt` "
+                     "(ex: *'Quantas pessoas há na foto?'*)."
+                 ))
     async def describe_image(
         file: UploadFile = File(...),
         prompt: str = Form("Descreva detalhadamente o que você vê nesta imagem."),
@@ -212,7 +231,14 @@ def create_model_router(model_name: str, slug: str, label: str) -> APIRouter:
     # ── Áudio ────────────────────────────────────────────────────────────────
 
     @router.post("/audio/transcribe", response_model=TranscribeResponse,
-                 summary=f"[{label}] Transcrever áudio (Whisper)")
+                 summary=f"[{label}] Transcrever áudio (Whisper)",
+                 description=(
+                     "Converte **fala em texto** usando Whisper. **Não usa o LLM** — "
+                     "só devolve a transcrição.\n\n"
+                     "**Quando usar:** legendar/transcrever áudio. Aceita MP3, WAV, M4A, OGG. "
+                     "Informe `language` (ex: `pt`) ou deixe vazio p/ detecção automática.\n\n"
+                     "Para transcrever **e** obter resposta do modelo, use **/audio/chat**."
+                 ))
     async def transcribe(
         file: UploadFile = File(...),
         language: Optional[str] = Form(None),
@@ -227,7 +253,13 @@ def create_model_router(model_name: str, slug: str, label: str) -> APIRouter:
         return TranscribeResponse(transcription=text, language=language)
 
     @router.post("/audio/chat", response_model=AudioChatResponse,
-                 summary=f"[{label}] Áudio → transcrição + resposta")
+                 summary=f"[{label}] Áudio → transcrição + resposta",
+                 description=(
+                     f"Pipeline de voz: transcreve o áudio (Whisper) e **{label}** responde.\n\n"
+                     "**Quando usar:** assistente por voz — o usuário fala e recebe uma resposta "
+                     "do modelo. Retorna a transcrição **e** a resposta gerada.\n\n"
+                     "Ajuste o comportamento via `system_prompt`."
+                 ))
     async def audio_chat(
         file: UploadFile = File(...),
         language: Optional[str] = Form(None),

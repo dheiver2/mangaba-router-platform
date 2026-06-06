@@ -42,25 +42,44 @@ def create_app() -> FastAPI:
 
 ---
 
-## 🧠 Modelos Mangaba disponíveis
+## 🧠 Qual modelo escolher?
 
-| Modelo | Params | Prefixo |
-|--------|--------|---------|
-| **Mangaba E2B** | 2B   | `/api/v1/e2b/` |
-| **Mangaba E4B** | 4B   | `/api/v1/e4b/` |
-| **Mangaba 12B** | 12B  | `/api/v1/12b/` |
-| **Mangaba 26B** | 26B MoE (4B ativos) | `/api/v1/26b/` |
+A API carrega **um modelo por vez** (troca automática ao chamar outro prefixo).
+Escolha pelo equilíbrio entre **qualidade** e **RAM/velocidade**:
 
-## 🔌 Endpoints por modelo
-- `POST /{modelo}/text/generate` — geração de texto
-- `POST /{modelo}/text/chat` — chat com histórico
-- `POST /{modelo}/image/describe` — análise de imagem
-- `POST /{modelo}/audio/transcribe` — transcrição de áudio
-- `POST /{modelo}/audio/chat` — áudio → resposta do modelo
+| Modelo | Prefixo | Params | RAM mín. | Quando usar |
+|--------|---------|--------|----------|-------------|
+| **Mangaba E2B** | `/api/v1/e2b/` | 2B | ~8 GB | **Padrão.** Respostas rápidas, chat simples, alto volume, hardware modesto (≤16GB). |
+| **Mangaba E4B** | `/api/v1/e4b/` | 4B | ~12 GB | Mais qualidade que o E2B mantendo boa velocidade. Bom meio-termo. |
+| **Mangaba 12B** | `/api/v1/12b/` | 12B | ~24 GB | Tarefas complexas: raciocínio, análise de imagem detalhada, textos longos. Exige bastante RAM. |
+| **Mangaba 26B** | `/api/v1/26b/` | 26B MoE (4B ativos) | ~40 GB | Máxima qualidade. MoE: custo de 4B ativos mas precisa carregar 26B. Só em servidores. |
+
+> 💡 **Regra prática:** comece no **E2B**. Suba para 12B/26B só se precisar de mais
+> qualidade **e** tiver RAM suficiente — senão a máquina entra em swap e fica lenta.
+
+---
+
+## 🔌 Qual rota usar?
+
+Cada modelo expõe as mesmas 5 rotas. Escolha pela **tarefa**:
+
+| Rota | Entrada | Quando usar |
+|------|---------|-------------|
+| `POST /{modelo}/text/chat` | mensagens (system/user/assistant) | **Conversas e instruções.** É a rota recomendada para a maioria dos casos — usa o template de chat do modelo. |
+| `POST /{modelo}/text/generate` | prompt cru (string) | Completar texto livre, sem formato de chat. Para quem quer controle total do prompt. |
+| `POST /{modelo}/image/describe` | arquivo de imagem + pergunta | **Visão:** descrever/analisar imagem, OCR, perguntar sobre o conteúdo visual. |
+| `POST /{modelo}/audio/transcribe` | arquivo de áudio | **Só transcrever** fala → texto (Whisper). Não usa o LLM. |
+| `POST /{modelo}/audio/chat` | arquivo de áudio | **Áudio → resposta:** transcreve a fala e o LLM responde. Use para assistente por voz. |
+
+> `chat` vs `generate`: prefira **chat** (segue instruções melhor). Use `generate`
+> apenas para autocompletar texto bruto.
+
+---
 
 ## 🔑 Autenticação
 Envie o cabeçalho **`X-API-Key`** em todas as chamadas de inferência.
 Clique em **Authorize** 🔒 acima para testar pelo Swagger.
+Endpoints `health`, `metrics` e `users` são públicos.
         """,
         contact={"name": "Mangaba AI", "url": "https://github.com/dheiver2/Mangaba-Router"},
         license_info={"name": "Apache 2.0"},
