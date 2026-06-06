@@ -1,123 +1,149 @@
-# Gemma 4 API — Sistema 100% no HD Externo MangabaAI
+# 🥭 Mangaba Router
 
-API REST multimodal para os modelos **Google Gemma 4**, totalmente autocontida
-no HD externo. Não depende de Python, venv ou bibliotecas instaladas no notebook.
+Plataforma **multimodal de IA** (texto · imagem · áudio) servindo os modelos
+**Mangaba** — baseados em **Google Gemma 4**, quantizados **Q4_0 (QAT oficial)** —
+acelerados na **GPU Metal** (Apple Silicon). Roda **100% de um HD externo**, em 16 GB de RAM.
 
-## Como iniciar
+> Acesso livre (sem senha) · API REST + Swagger · multiplataforma · baixa latência.
 
-Plugue o HD externo **MangabaAI** em qualquer Mac (Apple Silicon) e rode:
+---
+
+## ⚡ Início rápido
+
+Plugue o HD externo **MangabaAI** num Mac (Apple Silicon) e rode:
 
 ```bash
 cd /Volumes/MangabaAI/gemma4-api
 ./start.sh
 ```
 
-Swagger: http://localhost:8000/swagger
+- **Swagger (interface):** http://localhost:8000/swagger
+- Na rede (outros dispositivos): `http://SEU_IP:8000/swagger`
 
-## Estrutura (tudo no HD externo)
+O modelo padrão (**E2B**) é pré-carregado no boot — a primeira requisição já sai rápida.
 
-```
-/Volumes/MangabaAI/gemma4-api/
-├── start.sh              # inicia a API (usa o Python portátil)
-├── python/              # Python 3.11 portátil + todas as dependências
-├── main.py
-├── app/                 # código da API
-├── config/
-├── models/              # 4 modelos Gemma 4 (~89 GB)
-│   ├── google--gemma-4-E2B-it
-│   ├── google--gemma-4-E4B-it
-│   ├── google--gemma-4-12B-it
-│   └── google--gemma-4-26B-A4B-it
-└── .env
-```
+---
 
-## Endpoints
+## 🧠 Modelos (quantizados Q4_0)
 
-### Por modelo (5 cada)
-| Modelo | Prefixo |
-|--------|---------|
-| Gemma 4 E2B (2B) | `/api/v1/e2b/` |
-| Gemma 4 E4B (4B) | `/api/v1/e4b/` |
-| Gemma 4 12B | `/api/v1/12b/` |
-| Gemma 4 26B MoE | `/api/v1/26b/` |
+A API carrega **um modelo por vez** (troca automática ao chamar outro prefixo).
 
-Cada modelo expõe:
-- `POST /{modelo}/text/generate`
-- `POST /{modelo}/text/chat`
-- `POST /{modelo}/image/describe`
-- `POST /{modelo}/audio/transcribe`
-- `POST /{modelo}/audio/chat`
+| Modelo | Prefixo | Params | Quando usar |
+|--------|---------|--------|-------------|
+| **Mangaba E2B** | `/api/v1/e2b/` | 2B  | Padrão. Rápido, chat simples, alto volume. |
+| **Mangaba E4B** | `/api/v1/e4b/` | 4B  | Mais qualidade mantendo boa velocidade. |
+| **Mangaba 12B** | `/api/v1/12b/` | 12B | Tarefas complexas: raciocínio, imagem detalhada, textos longos. |
 
-### Gerais
-- `GET /api/v1/health`
-- `GET /api/v1/metrics`
-- `GET /api/v1/models`
-- `POST /api/v1/models/load`
-- `GET /api/v1/models/current`
+> O **26B** foi removido: 15 GB não cabem nos 16 GB de RAM mesmo quantizado.
+> Todos baseados em `google/gemma-4-*-it-qat-q4_0-gguf` (QAT oficial do Google).
 
-## Multiusuário e multiplataforma
+---
 
-### Autenticação por API key
-Todos os endpoints de inferência exigem o cabeçalho `X-API-Key`.
-As chaves ficam em `config/users.json` (cada usuário tem chave + rate limit próprio).
+## 🔌 Rotas (5 por modelo)
 
+| Rota | Quando usar |
+|------|-------------|
+| `POST /{modelo}/text/chat` | **Conversas e instruções** (recomendada). |
+| `POST /{modelo}/text/generate` | Completar texto cru, controle total do prompt. |
+| `POST /{modelo}/image/describe` | **Visão:** descrever/analisar imagem, OCR. |
+| `POST /{modelo}/audio/transcribe` | **Só transcrever** fala → texto (Whisper). |
+| `POST /{modelo}/audio/chat` | **Áudio → resposta:** assistente por voz. |
+
+### Sistema / gerência (público)
+- `GET /api/v1/health` — status + modelo carregado
+- `GET /api/v1/metrics` — métricas de fila/concorrência
+- `GET /api/v1/models` — lista os modelos Mangaba
+- `GET /api/v1/users` · `POST /api/v1/users/reload`
+
+---
+
+## 💻 Exemplos
+
+**cURL:**
 ```bash
-# editar usuários e chaves
-nano config/users.json
-# recarregar sem reiniciar a API
-curl -X POST http://SEU_IP:8000/api/v1/users/reload
-```
-
-### Acesso em rede (qualquer plataforma)
-A API escuta em `0.0.0.0:8000` — acessível por web, mobile, desktop, qualquer SO.
-Descubra o IP da máquina e use-o nos clientes:
-
-```bash
-# IP local (LAN)
-ipconfig getifaddr en0     # macOS
-```
-
-### Exemplos de clientes
-
-**cURL (Linux/macOS/Windows):**
-```bash
-curl -X POST http://192.168.15.33:8000/api/v1/e2b/text/chat \
-  -H "X-API-Key: mangaba-web-CHANGE-ME-e5f6g7h8" \
+curl -X POST http://localhost:8000/api/v1/e2b/text/chat \
   -H "Content-Type: application/json" \
   -d '{"messages":[{"role":"user","content":"Olá!"}]}'
 ```
 
-**JavaScript (web/mobile):**
-```javascript
-fetch("http://192.168.15.33:8000/api/v1/e2b/text/chat", {
-  method: "POST",
-  headers: {
-    "X-API-Key": "mangaba-web-CHANGE-ME-e5f6g7h8",
-    "Content-Type": "application/json",
-  },
-  body: JSON.stringify({ messages: [{ role: "user", content: "Olá!" }] }),
-}).then(r => r.json()).then(console.log);
+**Imagem:**
+```bash
+curl -X POST http://localhost:8000/api/v1/e2b/image/describe \
+  -F "file=@foto.jpg" -F "prompt=O que há nesta imagem?"
 ```
 
-**Python:**
-```python
-import requests
-r = requests.post(
-    "http://192.168.15.33:8000/api/v1/e2b/text/chat",
-    headers={"X-API-Key": "mangaba-web-CHANGE-ME-e5f6g7h8"},
-    json={"messages": [{"role": "user", "content": "Olá!"}]},
-)
-print(r.json())
+**Áudio → resposta:**
+```bash
+curl -X POST http://localhost:8000/api/v1/e2b/audio/chat \
+  -F "file=@pergunta.mp3" -F "language=pt"
 ```
 
-### Concorrência (múltiplos usuários simultâneos)
-- Fila assíncrona com semáforo (`MAX_CONCURRENT_REQUESTS`, padrão 10)
-- Rate limit por usuário (req/min em `users.json`)
-- `GET /api/v1/users` mostra contadores de uso por usuário
+---
 
-## Observações
-- O HD externo é **ExFAT** — o Python portátil contorna a limitação de symlinks.
-- Carregar os pesos via USB é mais lento que SSD interno. Um modelo por vez fica
-  em memória; ao trocar de modelo o anterior é descarregado.
-- ⚠️ **Troque as chaves padrão** em `config/users.json` antes de expor na rede.
-# Mangaba-Router
+## 🏗️ Arquitetura
+
+```
+/Volumes/MangabaAI/gemma4-api/        ← tudo no HD externo (zero footprint no notebook)
+├── start.sh                          # inicia a API (Python portátil do HD)
+├── main.py                           # FastAPI: rotas, Swagger
+├── python/                           # Python 3.11 portátil + dependências
+├── app/
+│   ├── gguf_backend.py               # llama.cpp + Metal (carga, chat, visão)
+│   ├── routers/gguf_router.py        # rotas por modelo (texto/imagem/áudio)
+│   ├── auth.py                       # API key (desativada por padrão)
+│   ├── inference_queue.py            # fila assíncrona p/ concorrência
+│   └── routes.py                     # health/metrics
+├── config/settings.py
+├── scripts/download_gguf.py          # baixa os GGUF Q4_0 (marca Mangaba)
+└── mangaba_models/                   # modelos GGUF
+    ├── e2b/  mangaba-e2b-q4_0.gguf + mangaba-e2b-mmproj.gguf
+    ├── e4b/  mangaba-e4b-q4_0.gguf + mangaba-e4b-mmproj.gguf
+    └── 12b/  mangaba-12b-q4_0.gguf + mangaba-12b-mmproj.gguf
+```
+
+**Processamento:** GPU Metal + RAM do notebook (runtime). **Armazenamento:** 100% no HD externo.
+
+---
+
+## ⚙️ Otimizações de performance
+
+| Técnica | Efeito |
+|---------|--------|
+| **Warmup no boot** | Pré-carrega o E2B → 1ª requisição instantânea (~0.2 s) |
+| **mlock** | Fixa o modelo na RAM, nunca é despejado (sempre quente) |
+| **flash attention + n_batch + threads** | ~26 tokens/s na GPU Metal |
+| **mmap + page cache** | Reaproveita páginas já lidas |
+| **Preload fora do timeout** | Carga a frio do USB não causa 504 |
+
+> **Gargalo conhecido:** o HD em USB 2.0 (~108 MB/s) afeta só a **carga inicial**
+> de cada modelo (~30 s E2B, ~60 s 12B). Uma porta **USB 3 / Thunderbolt** reduz isso 4-5×.
+
+---
+
+## 🔧 Configuração (`config/settings.py` ou `.env`)
+
+| Variável | Padrão | Descrição |
+|----------|--------|-----------|
+| `AUTH_ENABLED` | `False` | `true` exige cabeçalho `X-API-Key` (chaves em `config/users.json`) |
+| `STAGE_TO_SSD` | `0` | `1` copia o modelo p/ o SSD do notebook (mais rápido, mas ocupa o notebook) |
+| `MAX_CONCURRENT_REQUESTS` | `10` | Requisições simultâneas na fila |
+| `REQUEST_TIMEOUT_SECONDS` | `300` | Timeout de inferência |
+| `HOST` / `PORT` | `0.0.0.0` / `8000` | Bind de rede |
+
+---
+
+## 📦 Setup do zero (nova máquina)
+
+```bash
+cd /Volumes/MangabaAI/gemma4-api
+# Python portátil já incluso; se faltar, recrie deps:
+./python/bin/python3.11 -m pip install -r requirements.txt
+# baixar os modelos GGUF (precisa de HF_TOKEN no .env)
+./python/bin/python3.11 scripts/download_gguf.py
+./start.sh
+```
+
+---
+
+## Licença
+Apache 2.0 · Modelos: Google Gemma 4 (Apache 2.0) · Branding: Mangaba AI
