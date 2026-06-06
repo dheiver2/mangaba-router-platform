@@ -1,0 +1,26 @@
+version: "3.9"
+
+services:
+  gemma4-api:
+    build: .
+    container_name: gemma4-api
+    ports:
+      - "8000:8000"
+    environment:
+      - MODEL_ID=google/gemma-4-E2B-it
+      - HF_TOKEN=${HF_TOKEN}
+      - DEVICE=auto
+      - MAX_NEW_TOKENS=512
+      - TEMPERATURE=0.7
+      - MAX_CONCURRENT_REQUESTS=10
+      - REQUEST_TIMEOUT_SECONDS=120
+    volumes:
+      - ./models:/app/models
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    restart: unless-stopped

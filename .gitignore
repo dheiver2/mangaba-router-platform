@@ -1,0 +1,27 @@
+# Segredos
+.env
+
+# Modelos (89 GB — não versionar)
+models/
+
+# Python portátil (específico do HD externo)
+python/
+venv/
+
+# Cache Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+
+# Logs
+*.log
+
+# macOS
+.DS_Store
+System Volume Information/
+
+# Whisper cache
+*.pt
