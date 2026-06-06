@@ -9,12 +9,11 @@ import logging
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 
-# Modelos Mangaba — GGUF quantizados Q4_0 (rodam em 16GB via Metal)
+# Modelos Mangaba — GGUF quantizados Q4_0 (rodam 100% em 16GB via Metal)
 GGUF_ROUTES = [
     ("e2b", "Mangaba E2B"),
     ("e4b", "Mangaba E4B"),
     ("12b", "Mangaba 12B"),
-    ("26b", "Mangaba 26B"),
 ]
 
 
@@ -43,7 +42,6 @@ Todos são **quantizados Q4_0** (cabem em 16GB). Carrega **um por vez** (troca a
 | **Mangaba E2B** | `/api/v1/e2b/` | 2B  | **Padrão.** Rápido, chat simples, alto volume. |
 | **Mangaba E4B** | `/api/v1/e4b/` | 4B  | Mais qualidade mantendo boa velocidade. |
 | **Mangaba 12B** | `/api/v1/12b/` | 12B | Tarefas complexas: raciocínio, imagem detalhada, textos longos. |
-| **Mangaba 26B** | `/api/v1/26b/` | 26B MoE | Máxima qualidade. |
 
 ---
 

@@ -66,8 +66,6 @@ CATALOG = {
     "e2b": {"display_name": "Mangaba E2B (Q4_0)", "params": "2B",  "ctx": 8192},
     "e4b": {"display_name": "Mangaba E4B (Q4_0)", "params": "4B",  "ctx": 8192},
     "12b": {"display_name": "Mangaba 12B (Q4_0)", "params": "12B", "ctx": 4096},
-    # 26B é o maior (~15GB): contexto menor p/ caber o KV cache nos 16GB
-    "26b": {"display_name": "Mangaba 26B (Q4_0)", "params": "26B", "ctx": 2048},
 }
 
 _lock = Lock()

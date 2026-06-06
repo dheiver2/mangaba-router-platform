@@ -14,7 +14,7 @@ GGUF = {
     "e2b": ("google/gemma-4-E2B-it-qat-q4_0-gguf",   "gemma-4-E2B_q4_0-it.gguf",        "gemma-4-E2B-it-mmproj.gguf"),
     "e4b": ("google/gemma-4-E4B-it-qat-q4_0-gguf",   None,                              None),  # resolvido em runtime
     "12b": ("google/gemma-4-12B-it-qat-q4_0-gguf",   "gemma-4-12b-it-qat-q4_0.gguf",    "mmproj-gemma-4-12b-it-qat-q4_0.gguf"),
-    "26b": ("google/gemma-4-26B-A4B-it-qat-q4_0-gguf","gemma-4-26B_q4_0-it.gguf",        "gemma-4-26B-it-mmproj.gguf"),
+    # 26B removido: 15GB não cabe nos 16GB de RAM mesmo quantizado.
 }
 
 OUT = os.path.join(os.path.dirname(os.path.dirname(__file__)), "models_gguf")
