@@ -50,6 +50,15 @@ _tokenizer = None
 _model = None
 
 
+def _detect_device() -> str:
+    """CUDA > MPS (Apple Silicon) > CPU."""
+    if torch.cuda.is_available():
+        return "cuda"
+    if getattr(torch.backends, "mps", None) and torch.backends.mps.is_available():
+        return "mps"
+    return "cpu"
+
+
 def _resolve_path(name: str) -> str:
     entry = CATALOG[name]
     local = entry["local_dir"]
@@ -89,19 +98,25 @@ def load(name: str = DEFAULT_MODEL):
                 torch.cuda.empty_cache()
 
         path = _resolve_path(name)
-        logger.info(f"Carregando modelo '{name}' de: {path}")
+        device = _detect_device()
+        logger.info(f"Carregando modelo '{name}' de: {path} (device={device})")
 
         kwargs = {"token": HF_TOKEN} if HF_TOKEN else {}
-        dtype = torch.bfloat16 if torch.cuda.is_available() else torch.float32
-        device_map = "auto" if torch.cuda.is_available() else "cpu"
+        # float16: metade da RAM + compute acelerado na GPU (CUDA ou MPS/Metal).
+        # Em Apple Silicon, MPS usa a GPU integrada -> muito mais rápido que CPU.
+        dtype = torch.float16 if device in ("cuda", "mps") else torch.float32
 
         _tokenizer = AutoTokenizer.from_pretrained(path, **kwargs)
         _model = AutoModelForCausalLM.from_pretrained(
-            path, dtype=dtype, device_map=device_map, **kwargs
+            path,
+            dtype=dtype,
+            low_cpu_mem_usage=True,   # carrega shard a shard, sem dobrar a RAM
+            **kwargs,
         )
+        _model = _model.to(device)
         _model.eval()
         _current_name = name
-        logger.info(f"Modelo '{name}' carregado com sucesso.")
+        logger.info(f"Modelo '{name}' carregado (device={device}, dtype={dtype}).")
 
 
 def get_tokenizer():
