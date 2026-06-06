@@ -8,7 +8,7 @@ from fastapi import APIRouter, HTTPException, UploadFile, File, Form
 from pydantic import BaseModel
 
 from app import gguf_backend
-from app.inference_queue import enqueue
+from app.inference_queue import enqueue, run_in_thread
 from app.schemas import GenerateRequest, ChatRequest, Message, RoleEnum
 from config.settings import get_settings
 
@@ -77,11 +77,20 @@ def create_gguf_router(slug: str, label: str) -> APIRouter:
         if not gguf_backend.is_available(slug):
             raise HTTPException(503, f"Modelo '{slug}' não baixado. Rode scripts/download_gguf.py {slug}")
 
+    async def _preload(vision: bool = False):
+        """
+        Carrega o modelo (do USB) FORA do timeout de inferência.
+        Carga a frio pode levar ~60s no USB; não deve contar como timeout da request.
+        """
+        _ensure()
+        if gguf_backend.current_name() != slug or not gguf_backend.is_loaded():
+            await run_in_thread(gguf_backend.load, slug, vision=vision)
+
     @router.post("/text/chat", response_model=QResponse,
                  summary=f"[{label}] Chat",
                  description=f"Conversa com **Mangaba {label}** (Q4_0, GPU Metal). Rota recomendada.")
     async def chat(req: ChatRequest):
-        _ensure()
+        await _preload()
         msgs = [{"role": m.role.value, "content": m.content} for m in req.messages]
         try:
             text, toks = await asyncio.wait_for(
@@ -97,7 +106,7 @@ def create_gguf_router(slug: str, label: str) -> APIRouter:
     @router.post("/text/generate", response_model=QResponse,
                  summary=f"[Q4_0 {label}] Gerar texto (quantizado)")
     async def generate(req: GenerateRequest):
-        _ensure()
+        await _preload()
         try:
             text, toks = await asyncio.wait_for(
                 enqueue(gguf_backend.generate, slug, req.prompt,
@@ -115,7 +124,7 @@ def create_gguf_router(slug: str, label: str) -> APIRouter:
     async def describe(file: UploadFile = File(...),
                        prompt: str = Form("Descreva esta imagem."),
                        max_new_tokens: int = Form(256)):
-        _ensure()
+        await _preload(vision=True)
         content = await file.read()
         try:
             text, toks = await asyncio.wait_for(
@@ -144,7 +153,7 @@ def create_gguf_router(slug: str, label: str) -> APIRouter:
     async def audio_chat(file: UploadFile = File(...), language: Optional[str] = Form(None),
                          system_prompt: str = Form("Você é um assistente útil em português."),
                          max_new_tokens: int = Form(256)):
-        _ensure()
+        await _preload()
         content = await file.read()
         def _run():
             transcription = _transcribe(content, language)

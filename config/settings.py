@@ -13,7 +13,7 @@ class Settings(BaseSettings):
     # Concorrência: quantas inferências podem estar "esperando" a GPU ao mesmo tempo
     # Requisições acima desse limite retornam 503 imediatamente (fail-fast)
     max_concurrent_requests: int = 10
-    request_timeout_seconds: int = 120
+    request_timeout_seconds: int = 300
     # Multiusuário: exige cabeçalho X-API-Key (chaves em config/users.json)
     # False = acesso livre pelo Swagger, sem senha (defina AUTH_ENABLED=true p/ reativar)
     auth_enabled: bool = False
