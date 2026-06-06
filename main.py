@@ -1,5 +1,7 @@
 from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
+from contextlib import asynccontextmanager
+import threading
 from config.settings import get_settings
 from app.routes import router
 from app.routers.gguf_router import create_gguf_router
@@ -17,12 +19,21 @@ GGUF_ROUTES = [
 ]
 
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Warmup em background: pré-carrega o modelo padrão (e2b) sem bloquear o boot.
+    # A 1ª requisição do usuário já encontra o modelo quente → baixa latência.
+    threading.Thread(target=gguf_backend.warmup, daemon=True).start()
+    yield
+
+
 def create_app() -> FastAPI:
     settings = get_settings()
 
     app = FastAPI(
         title="Mangaba Router API",
         version=settings.api_version,
+        lifespan=lifespan,
         description="""
 # Mangaba Router
 

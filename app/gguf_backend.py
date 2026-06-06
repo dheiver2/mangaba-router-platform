@@ -104,8 +104,21 @@ def load(slug: str, vision: bool = False):
         _chat_handler = None
 
         from llama_cpp import Llama
+        import os as _os
         ctx = CATALOG.get(slug, {}).get("ctx", 8192)
-        kwargs = dict(model_path=main, n_ctx=ctx, n_gpu_layers=-1, verbose=False)
+        # Núcleos de performance (Apple Silicon): usa todos menos 1 p/ não travar o SO
+        n_threads = max(1, (_os.cpu_count() or 8) - 1)
+        kwargs = dict(
+            model_path=main,
+            n_ctx=ctx,
+            n_gpu_layers=-1,        # todas as camadas na GPU Metal
+            n_threads=n_threads,
+            n_batch=512,            # prompt processing em lote (mais throughput)
+            use_mmap=True,          # mapeia o arquivo; SO mantém páginas em cache (RAM)
+            use_mlock=False,        # não trava RAM (modelo no HD externo)
+            flash_attn=True,        # atenção otimizada → decode mais rápido
+            verbose=False,
+        )
 
         if vision and proj:
             from llama_cpp.llama_chat_format import Llava15ChatHandler
@@ -113,11 +126,16 @@ def load(slug: str, vision: bool = False):
             kwargs["chat_handler"] = _chat_handler
 
         mode = "visão" if (vision and proj) else "texto"
-        logger.info(f"Carregando GGUF '{slug}' ({mode}, Metal) de {os.path.basename(main)}")
+        logger.info(f"Carregando GGUF '{slug}' ({mode}, Metal, {n_threads}t) de {os.path.basename(main)}")
         _llm = Llama(**kwargs)
         _current = slug
         _vision_mode = bool(vision and proj)
-        logger.info(f"GGUF '{slug}' carregado ({mode}).")
+        # warmup: 1 token de inferência aquece os kernels Metal e o page cache
+        try:
+            _llm.create_completion(prompt="ok", max_tokens=1)
+        except Exception:
+            pass
+        logger.info(f"GGUF '{slug}' carregado e aquecido ({mode}).")
 
 
 def _ensure(slug: str, vision: bool = False):
@@ -166,6 +184,19 @@ def describe_image(slug: str, image_bytes: bytes, prompt: str,
     text = out["choices"][0]["message"]["content"].strip()
     toks = out.get("usage", {}).get("completion_tokens", 0)
     return text, toks
+
+
+DEFAULT_MODEL = "e2b"
+
+
+def warmup(slug: str = DEFAULT_MODEL):
+    """Pré-carrega um modelo (no boot) para a 1ª requisição do usuário ser instantânea."""
+    try:
+        if is_available(slug):
+            load(slug)
+            logger.info(f"Warmup concluído: '{slug}' pronto.")
+    except Exception as e:
+        logger.warning(f"Warmup falhou para '{slug}': {e}")
 
 
 def current_name() -> str | None:
