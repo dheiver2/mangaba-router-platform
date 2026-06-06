@@ -1,0 +1,22 @@
+{
+  "users": [
+    {
+      "name": "admin",
+      "api_key": "mangaba-admin-CHANGE-ME-a1b2c3d4",
+      "rate_limit_per_minute": 120,
+      "enabled": true
+    },
+    {
+      "name": "app-web",
+      "api_key": "mangaba-web-CHANGE-ME-e5f6g7h8",
+      "rate_limit_per_minute": 60,
+      "enabled": true
+    },
+    {
+      "name": "app-mobile",
+      "api_key": "mangaba-mobile-CHANGE-ME-i9j0k1l2",
+      "rate_limit_per_minute": 60,
+      "enabled": true
+    }
+  ]
+}

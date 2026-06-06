@@ -25,3 +25,6 @@ System Volume Information/
 
 # Whisper cache
 *.pt
+
+# Chaves de API dos usuarios
+config/users.json

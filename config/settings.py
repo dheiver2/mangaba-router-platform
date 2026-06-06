@@ -14,6 +14,11 @@ class Settings(BaseSettings):
     # Requisições acima desse limite retornam 503 imediatamente (fail-fast)
     max_concurrent_requests: int = 10
     request_timeout_seconds: int = 120
+    # Multiusuário: exige cabeçalho X-API-Key (chaves em config/users.json)
+    auth_enabled: bool = True
+    # Rede: 0.0.0.0 expõe na LAN para múltiplas plataformas (web, mobile, desktop)
+    host: str = "0.0.0.0"
+    port: int = 8000
     api_title: str = "Gemma 4 API"
     api_version: str = "1.0.0"
     api_description: str = "API REST para inferência com o modelo Google Gemma 4 E2B Instruct"

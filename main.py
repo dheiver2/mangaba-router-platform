@@ -1,11 +1,12 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from config.settings import get_settings
 from app.routes import router
 from app.routers import text, image, audio, models
 from app.routers.model_router import create_model_router
-from app import model_loader
+from app.auth import verify_api_key
+from app import model_loader, auth
 import logging
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
@@ -65,18 +66,52 @@ Cada modelo tem seu próprio conjunto de endpoints:
         allow_headers=["*"],
     )
 
-    # Routers gerais
-    app.include_router(router, prefix="/api/v1")
-    app.include_router(text.router, prefix="/api/v1")
-    app.include_router(image.router, prefix="/api/v1")
-    app.include_router(audio.router, prefix="/api/v1")
-    app.include_router(models.router, prefix="/api/v1")
+    # Dependência de autenticação aplicada a todos os endpoints de inferência.
+    # (health, swagger, redoc e openapi.json permanecem públicos)
+    auth_dep = [Depends(verify_api_key)]
 
-    # Router dedicado por modelo
+    # Router de sistema (health/metrics) — público
+    app.include_router(router, prefix="/api/v1")
+
+    # Routers de inferência — protegidos por API key
+    app.include_router(text.router, prefix="/api/v1", dependencies=auth_dep)
+    app.include_router(image.router, prefix="/api/v1", dependencies=auth_dep)
+    app.include_router(audio.router, prefix="/api/v1", dependencies=auth_dep)
+    app.include_router(models.router, prefix="/api/v1", dependencies=auth_dep)
+
+    # Router dedicado por modelo — protegido por API key
     for model_name, slug, label in MODEL_ROUTES:
         model_router = create_model_router(model_name, slug, label)
-        app.include_router(model_router, prefix="/api/v1")
+        app.include_router(model_router, prefix="/api/v1", dependencies=auth_dep)
 
+    # Endpoints de gerenciamento de usuários
+    @app.get("/api/v1/users", tags=["Usuários"], summary="Listar usuários cadastrados")
+    def list_users():
+        return {"users": auth.list_users(), "metrics": auth.user_metrics()}
+
+    @app.post("/api/v1/users/reload", tags=["Usuários"], summary="Recarregar users.json")
+    def reload_users():
+        n = auth.reload_users()
+        return {"message": f"{n} usuários carregados."}
+
+    # Adiciona o esquema de API key no Swagger (botão "Authorize")
+    from fastapi.openapi.utils import get_openapi
+
+    def custom_openapi():
+        if app.openapi_schema:
+            return app.openapi_schema
+        schema = get_openapi(
+            title=app.title, version=app.version,
+            description=app.description, routes=app.routes,
+        )
+        schema.setdefault("components", {}).setdefault("securitySchemes", {})["ApiKeyAuth"] = {
+            "type": "apiKey", "in": "header", "name": "X-API-Key",
+        }
+        schema["security"] = [{"ApiKeyAuth": []}]
+        app.openapi_schema = schema
+        return schema
+
+    app.openapi = custom_openapi
     return app
 
 
@@ -85,10 +120,11 @@ app = create_app()
 
 if __name__ == "__main__":
     import uvicorn
+    _settings = get_settings()
     uvicorn.run(
         "main:app",
-        host="0.0.0.0",
-        port=8000,
+        host=_settings.host,
+        port=_settings.port,
         workers=1,
         loop="uvloop",
         http="httptools",
