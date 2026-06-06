@@ -115,7 +115,7 @@ def load(slug: str, vision: bool = False):
             n_threads=n_threads,
             n_batch=512,            # prompt processing em lote (mais throughput)
             use_mmap=True,          # mapeia o arquivo; SO mantém páginas em cache (RAM)
-            use_mlock=False,        # não trava RAM (modelo no HD externo)
+            use_mlock=True,         # FIXA o modelo na RAM → nunca é despejado, fica quente
             flash_attn=True,        # atenção otimizada → decode mais rápido
             verbose=False,
         )
