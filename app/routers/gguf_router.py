@@ -39,7 +39,8 @@ def _ensure_ffmpeg():
     try:
         import imageio_ffmpeg
         exe = imageio_ffmpeg.get_ffmpeg_exe()
-        bin_dir = os.path.expanduser("~/.cache/mangaba-router/bin")
+        # bin no próprio HD externo (nada no notebook)
+        bin_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), ".bin")
         os.makedirs(bin_dir, exist_ok=True)
         dest = os.path.join(bin_dir, "ffmpeg")
         if not os.path.exists(dest):

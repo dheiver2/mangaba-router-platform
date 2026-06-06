@@ -31,3 +31,4 @@ config/users.json
 
 # Modelos GGUF (grandes)
 models_gguf/
+/.bin/

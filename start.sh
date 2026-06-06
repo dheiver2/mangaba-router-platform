@@ -14,9 +14,9 @@ if [ ! -x "$PYTHON" ]; then
   exit 1
 fi
 
-# STAGE_TO_SSD=1 copia o modelo ativo para o SSD do notebook na 1ª carga
-# (elimina o gargalo de leitura do USB). Padrão: ativado.
-export STAGE_TO_SSD="${STAGE_TO_SSD:-1}"
+# STAGE_TO_SSD: copiar o modelo para o SSD do notebook (mais rápido) ou não.
+# 0 = tudo roda 100% do HD externo (nada fica no notebook). Padrão: desativado.
+export STAGE_TO_SSD="${STAGE_TO_SSD:-0}"
 
 echo "==> Python: $($PYTHON --version) (portátil, no HD externo)"
 echo "==> Cache SSD: STAGE_TO_SSD=$STAGE_TO_SSD"

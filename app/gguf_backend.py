@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 _GGUF_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "models_gguf")
 # Cache no SSD do notebook — evita contenção/lentidão do USB ao carregar.
 _SSD_CACHE = os.path.expanduser("~/.cache/mangaba-router/gguf")
-_STAGE = os.getenv("STAGE_TO_SSD", "1") == "1"
+_STAGE = os.getenv("STAGE_TO_SSD", "0") == "1"
 
 
 def _find_files(slug: str):
