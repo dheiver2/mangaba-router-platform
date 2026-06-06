@@ -1,9 +1,9 @@
 version: "3.9"
 
 services:
-  gemma4-api:
+  mangaba-router:
     build: .
-    container_name: gemma4-api
+    container_name: mangaba-router
     ports:
       - "8000:8000"
     environment:

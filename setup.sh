@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Configura o ambiente do gemma4-api a partir do HD externo
+# Configura o ambiente do mangaba-router a partir do HD externo
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
