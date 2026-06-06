@@ -13,10 +13,10 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(me
 
 # Definição dos modelos e seus slugs de URL
 MODEL_ROUTES = [
-    ("gemma-4-E2B-it",    "e2b",  "Gemma4 E2B"),
-    ("gemma-4-E4B-it",    "e4b",  "Gemma4 E4B"),
-    ("gemma-4-12B-it",    "12b",  "Gemma4 12B"),
-    ("gemma-4-26B-A4B-it","26b",  "Gemma4 26B"),
+    ("gemma-4-E2B-it",    "e2b",  "Mangaba E2B 🥭"),
+    ("gemma-4-E4B-it",    "e4b",  "Mangaba E4B 🥭"),
+    ("gemma-4-12B-it",    "12b",  "Mangaba 12B 🥭"),
+    ("gemma-4-26B-A4B-it","26b",  "Mangaba 26B 🥭"),
 ]
 
 
@@ -30,33 +30,50 @@ def create_app() -> FastAPI:
     settings = get_settings()
 
     app = FastAPI(
-        title=settings.api_title,
+        title="🥭 Mangaba Router API",
         version=settings.api_version,
         description="""
-API REST para inferência com os modelos **Google Gemma 4**.
+# 🥭 Mangaba Router
 
-## Endpoints por modelo
+**Plataforma multimodal de IA** — roteamento inteligente entre múltiplos modelos
+**Mangaba** (baseados em Google Gemma 4), com texto, imagem e áudio.
 
-Cada modelo tem seu próprio conjunto de endpoints:
+> Multiusuário · Multiplataforma · GPU acelerada · 100% autocontido no HD externo.
 
-| Modelo | Prefixo |
-|--------|---------|
-| Gemma 4 E2B (2B params) | `/api/v1/e2b/` |
-| Gemma 4 E4B (4B params) | `/api/v1/e4b/` |
-| Gemma 4 12B             | `/api/v1/12b/` |
-| Gemma 4 26B MoE (4B ativos) | `/api/v1/26b/` |
+---
 
-## Endpoints disponíveis por modelo
+## 🧠 Modelos Mangaba disponíveis
+
+| Modelo | Params | Prefixo |
+|--------|--------|---------|
+| **Mangaba E2B** 🥭 | 2B   | `/api/v1/e2b/` |
+| **Mangaba E4B** 🥭 | 4B   | `/api/v1/e4b/` |
+| **Mangaba 12B** 🥭 | 12B  | `/api/v1/12b/` |
+| **Mangaba 26B** 🥭 | 26B MoE (4B ativos) | `/api/v1/26b/` |
+
+## 🔌 Endpoints por modelo
 - `POST /{modelo}/text/generate` — geração de texto
 - `POST /{modelo}/text/chat` — chat com histórico
 - `POST /{modelo}/image/describe` — análise de imagem
 - `POST /{modelo}/audio/transcribe` — transcrição de áudio
 - `POST /{modelo}/audio/chat` — áudio → resposta do modelo
+
+## 🔑 Autenticação
+Envie o cabeçalho **`X-API-Key`** em todas as chamadas de inferência.
+Clique em **Authorize** 🔒 acima para testar pelo Swagger.
         """,
+        contact={"name": "Mangaba AI", "url": "https://github.com/dheiver2/Mangaba-Router"},
+        license_info={"name": "Apache 2.0"},
         lifespan=lifespan,
         docs_url="/swagger",
         redoc_url="/redoc",
         openapi_url="/openapi.json",
+        swagger_ui_parameters={
+            "defaultModelsExpandDepth": -1,
+            "docExpansion": "none",
+            "filter": True,
+            "tryItOutEnabled": True,
+        },
     )
 
     app.add_middleware(

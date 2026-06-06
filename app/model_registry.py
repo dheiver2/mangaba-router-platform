@@ -14,30 +14,34 @@ logger = logging.getLogger(__name__)
 
 HF_TOKEN = os.getenv("HF_TOKEN", "")
 
-# Catálogo de modelos disponíveis
+# Catálogo de modelos disponíveis (família Mangaba, baseada em Google Gemma 4)
 CATALOG: dict[str, dict] = {
     "gemma-4-E2B-it": {
         "repo_id": "google/gemma-4-E2B-it",
         "local_dir": "models/google--gemma-4-E2B-it",
-        "description": "Gemma 4 E2B Instruct — 2B params efetivos (MoE compacto)",
+        "display_name": "Mangaba E2B 🥭",
+        "description": "Mangaba E2B 🥭 — 2B params efetivos (MoE compacto, mais rápido)",
         "params": "2B",
     },
     "gemma-4-E4B-it": {
         "repo_id": "google/gemma-4-E4B-it",
         "local_dir": "models/google--gemma-4-E4B-it",
-        "description": "Gemma 4 E4B Instruct — 4B params efetivos",
+        "display_name": "Mangaba E4B 🥭",
+        "description": "Mangaba E4B 🥭 — 4B params efetivos (equilíbrio)",
         "params": "4B",
     },
     "gemma-4-12B-it": {
         "repo_id": "google/gemma-4-12B-it",
         "local_dir": "models/google--gemma-4-12B-it",
-        "description": "Gemma 4 12B Instruct — multimodal, maior capacidade",
+        "display_name": "Mangaba 12B 🥭",
+        "description": "Mangaba 12B 🥭 — multimodal, maior capacidade",
         "params": "12B",
     },
     "gemma-4-26B-A4B-it": {
         "repo_id": "google/gemma-4-26B-A4B-it",
         "local_dir": "models/google--gemma-4-26B-A4B-it",
-        "description": "Gemma 4 26B MoE (4B ativos) Instruct — melhor custo-benefício",
+        "display_name": "Mangaba 26B 🥭",
+        "description": "Mangaba 26B 🥭 — MoE 26B (4B ativos), melhor custo-benefício",
         "params": "26B/4B-active",
     },
 }
@@ -153,6 +157,7 @@ def list_models() -> list[dict]:
     for name, info in CATALOG.items():
         result.append({
             "name": name,
+            "display_name": info.get("display_name", name),
             "repo_id": info["repo_id"],
             "description": info["description"],
             "params": info["params"],
