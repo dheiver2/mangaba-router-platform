@@ -6,7 +6,7 @@ import os
 import torch
 import logging
 from threading import Lock
-from transformers import AutoTokenizer, AutoModelForCausalLM
+from transformers import AutoTokenizer, AutoModelForCausalLM, AutoProcessor
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -51,6 +51,7 @@ DEFAULT_MODEL = "gemma-4-E2B-it"
 _lock = Lock()
 _current_name: str | None = None
 _tokenizer = None
+_processor = None
 _model = None
 
 
@@ -118,7 +119,7 @@ def _is_available(name: str) -> bool:
 
 
 def load(name: str = DEFAULT_MODEL):
-    global _current_name, _tokenizer, _model
+    global _current_name, _tokenizer, _processor, _model
 
     with _lock:
         if _current_name == name and _model is not None:
@@ -133,6 +134,7 @@ def load(name: str = DEFAULT_MODEL):
             del _tokenizer
             _model = None
             _tokenizer = None
+            _processor = None
             if torch.cuda.is_available():
                 torch.cuda.empty_cache()
 
@@ -146,6 +148,12 @@ def load(name: str = DEFAULT_MODEL):
         dtype = torch.float16 if device in ("cuda", "mps") else torch.float32
 
         _tokenizer = AutoTokenizer.from_pretrained(path, **kwargs)
+        # Processor multimodal (texto + imagem). Pode não existir em alguns repos.
+        try:
+            _processor = AutoProcessor.from_pretrained(path, **kwargs)
+        except Exception as e:
+            _processor = None
+            logger.warning(f"AutoProcessor indisponível ({e}); imagem desabilitada.")
         _model = AutoModelForCausalLM.from_pretrained(
             path,
             dtype=dtype,
@@ -156,6 +164,12 @@ def load(name: str = DEFAULT_MODEL):
         _model.eval()
         _current_name = name
         logger.info(f"Modelo '{name}' carregado (device={device}, dtype={dtype}).")
+
+
+def get_processor():
+    if _processor is None and _model is None:
+        load()
+    return _processor
 
 
 def get_tokenizer():

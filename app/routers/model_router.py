@@ -48,30 +48,63 @@ class AudioChatResponse(BaseModel):
 
 def _run_image_inference(image, prompt: str, max_new_tokens: int, temperature: float):
     import torch
-    tokenizer = model_registry.get_tokenizer()
+    processor = model_registry.get_processor()
     model = model_registry.get_model()
+    if processor is None:
+        raise RuntimeError("Modelo atual não suporta imagem (sem AutoProcessor).")
+
     messages = [{"role": "user", "content": [
         {"type": "image", "image": image},
         {"type": "text", "text": prompt},
     ]}]
-    text_input = tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
-    inputs = tokenizer(text=text_input, images=[image], return_tensors="pt").to(model.device)
+    inputs = processor.apply_chat_template(
+        messages,
+        add_generation_prompt=True,
+        tokenize=True,
+        return_dict=True,
+        return_tensors="pt",
+    ).to(model.device)
+    # alinha o dtype dos pixels ao do modelo (float16 na GPU)
+    if "pixel_values" in inputs:
+        inputs["pixel_values"] = inputs["pixel_values"].to(model.dtype)
     input_len = inputs["input_ids"].shape[1]
     with torch.no_grad():
         output = model.generate(
             **inputs, max_new_tokens=max_new_tokens,
             temperature=temperature, do_sample=temperature > 0,
-            pad_token_id=tokenizer.eos_token_id,
+            pad_token_id=processor.tokenizer.eos_token_id,
         )
     generated = output[0][input_len:]
-    return tokenizer.decode(generated, skip_special_tokens=True).strip(), len(generated)
+    return processor.decode(generated, skip_special_tokens=True).strip(), len(generated)
 
 
 _whisper_model = None
 
+def _ensure_ffmpeg():
+    """
+    Disponibiliza o ffmpeg empacotado (imageio-ffmpeg) com o nome 'ffmpeg' num
+    diretório do SSD do notebook (ExFAT não suporta symlink/exec confiável),
+    e o adiciona ao PATH para o Whisper encontrá-lo.
+    """
+    import shutil
+    try:
+        import imageio_ffmpeg
+        exe = imageio_ffmpeg.get_ffmpeg_exe()
+        bin_dir = os.path.expanduser("~/.cache/mangaba-router/bin")
+        os.makedirs(bin_dir, exist_ok=True)
+        dest = os.path.join(bin_dir, "ffmpeg")
+        if not os.path.exists(dest):
+            shutil.copy2(exe, dest)
+            os.chmod(dest, 0o755)
+        if bin_dir not in os.environ.get("PATH", ""):
+            os.environ["PATH"] = bin_dir + os.pathsep + os.environ.get("PATH", "")
+    except Exception:
+        pass
+
 def _load_whisper():
     global _whisper_model
     if _whisper_model is None:
+        _ensure_ffmpeg()
         import whisper
         _whisper_model = whisper.load_model("base")
     return _whisper_model
