@@ -38,39 +38,52 @@ def create_app() -> FastAPI:
 # Mangaba Router
 
 **Plataforma multimodal de IA** — modelos **Mangaba** (Gemma 4) quantizados **Q4_0**,
-acelerados na GPU (Metal/Apple Silicon). Texto, imagem e áudio.
+acelerados na GPU (Metal/Apple Silicon). Texto · Imagem · Áudio.
 
-> Multiusuário · Multiplataforma · 100% no HD externo · roda em 16GB de RAM.
+> 🔓 Acesso livre (sem senha) · 100% no HD externo · roda em 16 GB de RAM · GPU Metal.
 
 ---
 
 ## 🧠 Qual modelo escolher?
 
-Todos são **quantizados Q4_0** (cabem em 16GB). Carrega **um por vez** (troca automática).
+Todos **quantizados Q4_0** (cabem em 16 GB). A API carrega **um por vez** — ao chamar
+outro prefixo, ela troca de modelo automaticamente.
 
 | Modelo | Prefixo | Params | Quando usar |
 |--------|---------|--------|-------------|
-| **Mangaba E2B** | `/api/v1/e2b/` | 2B  | **Padrão.** Rápido, chat simples, alto volume. |
+| **Mangaba E2B** 🟢 | `/api/v1/e2b/` | 2B  | **Padrão.** Rápido, chat simples, alto volume. Pré-carregado no boot. |
 | **Mangaba E4B** | `/api/v1/e4b/` | 4B  | Mais qualidade mantendo boa velocidade. |
 | **Mangaba 12B** | `/api/v1/12b/` | 12B | Tarefas complexas: raciocínio, imagem detalhada, textos longos. |
+
+> ⏱️ **Troca de modelo:** a 1ª chamada a um modelo ainda não carregado lê o arquivo
+> do HD (USB) — pode levar de ~30 s (E2B) a ~60 s (12B). Depois fica **quente**
+> (respostas em frações de segundo). O E2B já vem aquecido no boot.
 
 ---
 
 ## 🔌 Qual rota usar?
 
+Cada modelo expõe as mesmas 5 rotas. Escolha pela tarefa:
+
 | Rota | Quando usar |
 |------|-------------|
-| `POST /{modelo}/text/chat` | **Conversas e instruções** (rota recomendada). |
+| `POST /{modelo}/text/chat` | **Conversas e instruções** — rota recomendada (chat template). |
 | `POST /{modelo}/text/generate` | Completar texto cru, controle total do prompt. |
 | `POST /{modelo}/image/describe` | **Visão:** descrever/analisar imagem, OCR. |
-| `POST /{modelo}/audio/transcribe` | **Só transcrever** fala → texto (Whisper). |
-| `POST /{modelo}/audio/chat` | **Áudio → resposta:** assistente por voz. |
+| `POST /{modelo}/audio/transcribe` | **Só transcrever** fala → texto (Whisper, não usa o LLM). |
+| `POST /{modelo}/audio/chat` | **Áudio → resposta:** assistente por voz (transcreve + responde). |
 
 ---
 
-## 🔑 Autenticação
-Envie o cabeçalho **`X-API-Key`** nas chamadas de inferência (botão **Authorize** 🔒).
-`health`, `metrics`, `users` e `q/models` são públicos.
+## ▶️ Como testar aqui no Swagger
+1. Abra qualquer rota (ex: **`/api/v1/e2b/text/chat`**)
+2. Clique em **Try it out**
+3. Edite o JSON e clique em **Execute**
+
+Sem senha, sem cabeçalhos — acesso direto. 🔓
+
+## 📋 Endpoints de sistema (públicos)
+`GET /api/v1/health` · `GET /api/v1/metrics` · `GET /api/v1/models` · `GET /api/v1/users`
         """,
         contact={"name": "Mangaba AI", "url": "https://github.com/dheiver2/Mangaba-Router"},
         license_info={"name": "Apache 2.0"},
@@ -108,7 +121,7 @@ Envie o cabeçalho **`X-API-Key`** nas chamadas de inferência (botão **Authori
         n = auth.reload_users()
         return {"message": f"{n} usuários carregados."}
 
-    # Esquema de API key no Swagger (botão "Authorize")
+    # Esquema de API key no Swagger — só mostra o botão "Authorize" se a auth estiver ligada
     from fastapi.openapi.utils import get_openapi
 
     def custom_openapi():
@@ -118,10 +131,11 @@ Envie o cabeçalho **`X-API-Key`** nas chamadas de inferência (botão **Authori
             title=app.title, version=app.version,
             description=app.description, routes=app.routes,
         )
-        schema.setdefault("components", {}).setdefault("securitySchemes", {})["ApiKeyAuth"] = {
-            "type": "apiKey", "in": "header", "name": "X-API-Key",
-        }
-        schema["security"] = [{"ApiKeyAuth": []}]
+        if settings.auth_enabled:
+            schema.setdefault("components", {}).setdefault("securitySchemes", {})["ApiKeyAuth"] = {
+                "type": "apiKey", "in": "header", "name": "X-API-Key",
+            }
+            schema["security"] = [{"ApiKeyAuth": []}]
         app.openapi_schema = schema
         return schema
 
