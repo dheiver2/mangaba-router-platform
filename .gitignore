@@ -30,5 +30,5 @@ System Volume Information/
 config/users.json
 
 # Modelos GGUF (grandes)
-models_gguf/
+mangaba_models/
 /.bin/

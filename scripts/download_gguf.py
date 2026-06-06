@@ -17,7 +17,7 @@ GGUF = {
     # 26B removido: 15GB não cabe nos 16GB de RAM mesmo quantizado.
 }
 
-OUT = os.path.join(os.path.dirname(os.path.dirname(__file__)), "models_gguf")
+OUT = os.path.join(os.path.dirname(os.path.dirname(__file__)), "mangaba_models")
 
 
 def _resolve_e4b():
@@ -38,13 +38,17 @@ def main():
             repo, main_f, proj_f = _resolve_e4b()
         dest = os.path.join(OUT, slug)
         os.makedirs(dest, exist_ok=True)
-        for f in [main_f, proj_f]:
+        for f, tag in [(main_f, "q4_0"), (proj_f, "mmproj")]:
             if not f:
                 continue
             print(f"[{slug}] baixando {f} ...")
-            hf_hub_download(repo_id=repo, filename=f, local_dir=dest, token=TOK)
-        print(f"[{slug}] OK -> {dest}")
-    print("\nGGUF concluídos.")
+            path = hf_hub_download(repo_id=repo, filename=f, local_dir=dest, token=TOK)
+            # renomeia para a marca Mangaba
+            branded = os.path.join(dest, f"mangaba-{slug}-{tag}.gguf")
+            if os.path.abspath(path) != os.path.abspath(branded):
+                os.replace(path, branded)
+        print(f"[{slug}] OK -> {dest} (marca Mangaba)")
+    print("\nModelos Mangaba prontos.")
 
 
 if __name__ == "__main__":

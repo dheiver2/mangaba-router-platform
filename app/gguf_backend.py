@@ -15,7 +15,7 @@ from threading import Lock
 
 logger = logging.getLogger(__name__)
 
-_GGUF_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "models_gguf")
+_GGUF_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "mangaba_models")
 # Cache no SSD do notebook — evita contenção/lentidão do USB ao carregar.
 _SSD_CACHE = os.path.expanduser("~/.cache/mangaba-router/gguf")
 _STAGE = os.getenv("STAGE_TO_SSD", "0") == "1"
