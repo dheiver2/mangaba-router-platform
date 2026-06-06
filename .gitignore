@@ -28,3 +28,6 @@ System Volume Information/
 
 # Chaves de API dos usuarios
 config/users.json
+
+# Modelos GGUF (grandes)
+models_gguf/

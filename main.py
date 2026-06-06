@@ -1,29 +1,21 @@
 from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
-from contextlib import asynccontextmanager
 from config.settings import get_settings
 from app.routes import router
-from app.routers import text, image, audio, models
-from app.routers.model_router import create_model_router
+from app.routers.gguf_router import create_gguf_router
 from app.auth import verify_api_key
-from app import model_loader, auth
+from app import auth, gguf_backend
 import logging
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 
-# Definição dos modelos e seus slugs de URL
-MODEL_ROUTES = [
-    ("gemma-4-E2B-it",    "e2b",  "Mangaba E2B"),
-    ("gemma-4-E4B-it",    "e4b",  "Mangaba E4B"),
-    ("gemma-4-12B-it",    "12b",  "Mangaba 12B"),
-    ("gemma-4-26B-A4B-it","26b",  "Mangaba 26B"),
+# Modelos Mangaba — GGUF quantizados Q4_0 (rodam em 16GB via Metal)
+GGUF_ROUTES = [
+    ("e2b", "Mangaba E2B"),
+    ("e4b", "Mangaba E4B"),
+    ("12b", "Mangaba 12B"),
+    ("26b", "Mangaba 26B"),
 ]
-
-
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    model_loader.load_model()
-    yield
 
 
 def create_app() -> FastAPI:
@@ -35,56 +27,45 @@ def create_app() -> FastAPI:
         description="""
 # Mangaba Router
 
-**Plataforma multimodal de IA** — roteamento inteligente entre múltiplos modelos
-**Mangaba** (baseados em Google Gemma 4), com texto, imagem e áudio.
+**Plataforma multimodal de IA** — modelos **Mangaba** (Gemma 4) quantizados **Q4_0**,
+acelerados na GPU (Metal/Apple Silicon). Texto, imagem e áudio.
 
-> Multiusuário · Multiplataforma · GPU acelerada · 100% autocontido no HD externo.
+> Multiusuário · Multiplataforma · 100% no HD externo · roda em 16GB de RAM.
 
 ---
 
 ## 🧠 Qual modelo escolher?
 
-A API carrega **um modelo por vez** (troca automática ao chamar outro prefixo).
-Escolha pelo equilíbrio entre **qualidade** e **RAM/velocidade**:
+Todos são **quantizados Q4_0** (cabem em 16GB). Carrega **um por vez** (troca automática).
 
-| Modelo | Prefixo | Params | RAM mín. | Quando usar |
-|--------|---------|--------|----------|-------------|
-| **Mangaba E2B** | `/api/v1/e2b/` | 2B | ~8 GB | **Padrão.** Respostas rápidas, chat simples, alto volume, hardware modesto (≤16GB). |
-| **Mangaba E4B** | `/api/v1/e4b/` | 4B | ~12 GB | Mais qualidade que o E2B mantendo boa velocidade. Bom meio-termo. |
-| **Mangaba 12B** | `/api/v1/12b/` | 12B | ~24 GB | Tarefas complexas: raciocínio, análise de imagem detalhada, textos longos. Exige bastante RAM. |
-| **Mangaba 26B** | `/api/v1/26b/` | 26B MoE (4B ativos) | ~40 GB | Máxima qualidade. MoE: custo de 4B ativos mas precisa carregar 26B. Só em servidores. |
-
-> 💡 **Regra prática:** comece no **E2B**. Suba para 12B/26B só se precisar de mais
-> qualidade **e** tiver RAM suficiente — senão a máquina entra em swap e fica lenta.
+| Modelo | Prefixo | Params | Quando usar |
+|--------|---------|--------|-------------|
+| **Mangaba E2B** | `/api/v1/e2b/` | 2B  | **Padrão.** Rápido, chat simples, alto volume. |
+| **Mangaba E4B** | `/api/v1/e4b/` | 4B  | Mais qualidade mantendo boa velocidade. |
+| **Mangaba 12B** | `/api/v1/12b/` | 12B | Tarefas complexas: raciocínio, imagem detalhada, textos longos. |
+| **Mangaba 26B** | `/api/v1/26b/` | 26B MoE | Máxima qualidade. |
 
 ---
 
 ## 🔌 Qual rota usar?
 
-Cada modelo expõe as mesmas 5 rotas. Escolha pela **tarefa**:
-
-| Rota | Entrada | Quando usar |
-|------|---------|-------------|
-| `POST /{modelo}/text/chat` | mensagens (system/user/assistant) | **Conversas e instruções.** É a rota recomendada para a maioria dos casos — usa o template de chat do modelo. |
-| `POST /{modelo}/text/generate` | prompt cru (string) | Completar texto livre, sem formato de chat. Para quem quer controle total do prompt. |
-| `POST /{modelo}/image/describe` | arquivo de imagem + pergunta | **Visão:** descrever/analisar imagem, OCR, perguntar sobre o conteúdo visual. |
-| `POST /{modelo}/audio/transcribe` | arquivo de áudio | **Só transcrever** fala → texto (Whisper). Não usa o LLM. |
-| `POST /{modelo}/audio/chat` | arquivo de áudio | **Áudio → resposta:** transcreve a fala e o LLM responde. Use para assistente por voz. |
-
-> `chat` vs `generate`: prefira **chat** (segue instruções melhor). Use `generate`
-> apenas para autocompletar texto bruto.
+| Rota | Quando usar |
+|------|-------------|
+| `POST /{modelo}/text/chat` | **Conversas e instruções** (rota recomendada). |
+| `POST /{modelo}/text/generate` | Completar texto cru, controle total do prompt. |
+| `POST /{modelo}/image/describe` | **Visão:** descrever/analisar imagem, OCR. |
+| `POST /{modelo}/audio/transcribe` | **Só transcrever** fala → texto (Whisper). |
+| `POST /{modelo}/audio/chat` | **Áudio → resposta:** assistente por voz. |
 
 ---
 
 ## 🔑 Autenticação
-Envie o cabeçalho **`X-API-Key`** em todas as chamadas de inferência.
-Clique em **Authorize** 🔒 acima para testar pelo Swagger.
-Endpoints `health`, `metrics` e `users` são públicos.
+Envie o cabeçalho **`X-API-Key`** nas chamadas de inferência (botão **Authorize** 🔒).
+`health`, `metrics`, `users` e `q/models` são públicos.
         """,
         contact={"name": "Mangaba AI", "url": "https://github.com/dheiver2/Mangaba-Router"},
         license_info={"name": "Apache 2.0"},
-        lifespan=lifespan,
-        docs_url="/swagger",      # Swagger UI padrão do FastAPI
+        docs_url="/swagger",
         redoc_url="/redoc",
         openapi_url="/openapi.json",
     )
@@ -96,25 +77,19 @@ Endpoints `health`, `metrics` e `users` são públicos.
         allow_headers=["*"],
     )
 
-    # Dependência de autenticação aplicada a todos os endpoints de inferência.
-    # (health, swagger, redoc e openapi.json permanecem públicos)
     auth_dep = [Depends(verify_api_key)]
 
-    # Router de sistema (health/metrics) — público
+    # Sistema (health/metrics) — público
     app.include_router(router, prefix="/api/v1")
 
-    # Routers de inferência — protegidos por API key
-    app.include_router(text.router, prefix="/api/v1", dependencies=auth_dep)
-    app.include_router(image.router, prefix="/api/v1", dependencies=auth_dep)
-    app.include_router(audio.router, prefix="/api/v1", dependencies=auth_dep)
-    app.include_router(models.router, prefix="/api/v1", dependencies=auth_dep)
+    # Rotas por modelo GGUF quantizado — protegidas por API key
+    for slug, label in GGUF_ROUTES:
+        app.include_router(create_gguf_router(slug, label), prefix="/api/v1", dependencies=auth_dep)
 
-    # Router dedicado por modelo — protegido por API key
-    for model_name, slug, label in MODEL_ROUTES:
-        model_router = create_model_router(model_name, slug, label)
-        app.include_router(model_router, prefix="/api/v1", dependencies=auth_dep)
+    @app.get("/api/v1/models", tags=["Modelos"], summary="Listar modelos Mangaba (Q4_0)")
+    def list_models():
+        return gguf_backend.list_models()
 
-    # Endpoints de gerenciamento de usuários
     @app.get("/api/v1/users", tags=["Usuários"], summary="Listar usuários cadastrados")
     def list_users():
         return {"users": auth.list_users(), "metrics": auth.user_metrics()}
@@ -124,7 +99,7 @@ Endpoints `health`, `metrics` e `users` são públicos.
         n = auth.reload_users()
         return {"message": f"{n} usuários carregados."}
 
-    # Adiciona o esquema de API key no Swagger (botão "Authorize")
+    # Esquema de API key no Swagger (botão "Authorize")
     from fastapi.openapi.utils import get_openapi
 
     def custom_openapi():

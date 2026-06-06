@@ -15,7 +15,8 @@ class Settings(BaseSettings):
     max_concurrent_requests: int = 10
     request_timeout_seconds: int = 120
     # Multiusuário: exige cabeçalho X-API-Key (chaves em config/users.json)
-    auth_enabled: bool = True
+    # False = acesso livre pelo Swagger, sem senha (defina AUTH_ENABLED=true p/ reativar)
+    auth_enabled: bool = False
     # Rede: 0.0.0.0 expõe na LAN para múltiplas plataformas (web, mobile, desktop)
     host: str = "0.0.0.0"
     port: int = 8000
