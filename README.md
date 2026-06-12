@@ -1,3 +1,10 @@
+<div align="center">
+  <img src="assets/mangaba-logo.svg" alt="Mangaba AI" width="140"/>
+
+  [![Mangaba AI](https://img.shields.io/badge/Mangaba-AI-F97518?style=for-the-badge)](https://www.mangaba.ia.br)
+  [![Site](https://img.shields.io/badge/mangaba.ia.br-1E0D01?style=for-the-badge)](https://www.mangaba.ia.br)
+</div>
+
 # 🥭 Mangaba Router
 
 Plataforma **multimodal de IA** (texto · imagem · áudio) servindo os modelos
